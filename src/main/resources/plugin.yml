@@ -1,0 +1,17 @@
+name: OnlineList
+description: Display online players sorted by arbitrary groups
+author: StarTux
+version: 0.1
+main: com.winthier.onlinelist.OnlineListPlugin
+commands:
+  list:
+    aliases: [ who, online, ls ]
+    description: Display the player list
+    permission: onlinelist.list
+permissions:
+  onlinelist.list:
+    description: View the online list
+    default: op
+  onlinelist.reload:
+    description: Reload the plugin
+    default: op
