@@ -112,7 +112,7 @@ public class OnlineListPlugin extends JavaPlugin implements Listener {
         }
         String[] serverNames = serverList.keySet().toArray(new String[0]);
         Arrays.sort(serverNames);
-        msg(sender, "&3&lPlayer List&r &3(&r%d&3)", totalCount);
+        msg(sender, "&3&l%s Player List&r &3(&r%d&3)", Connect.getInstance().getServer().getDisplayName(), totalCount);
         for (String serverName: serverNames) {
             OnlinePlayer[] playerArray = serverList.get(serverName).toArray(new OnlinePlayer[0]);
             if (playerArray.length == 0) continue;
