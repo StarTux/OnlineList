@@ -1,9 +1,1 @@
 ShowOnLogin: true
-format:
-  Title: '&b&lPlayer List &3(&f%PlayerCount%&3)'
-  Group: ' &3%DisplayName% (&f%PlayerCount%&3) [&f%PlayerList%&3]'
-  Delim: '&3, &f'
-groups:
-- DisplayName: Staff
-  Permission: group.trusted
-- DisplayName: Players

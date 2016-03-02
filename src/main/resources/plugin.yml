@@ -3,6 +3,8 @@ description: Display online players sorted by arbitrary groups
 author: StarTux
 version: 0.1
 main: com.winthier.onlinelist.OnlineListPlugin
+depend: [Connect]
+softdepend: [Vault]
 commands:
   list:
     aliases: [ who, online, ls ]
@@ -14,4 +16,7 @@ permissions:
     default: op
   onlinelist.reload:
     description: Reload the plugin
+    default: op
+  onlinelist.staff:
+    description: Show up as staff
     default: op

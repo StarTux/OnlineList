@@ -1,17 +1,23 @@
 package com.winthier.onlinelist;
 
+import com.winthier.connect.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Value;
+import net.milkbowl.vault.permission.Permission;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -25,6 +31,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class OnlineListPlugin extends JavaPlugin implements Listener {
     @Value class Group { String displayName; String permission; }
     List<Group> groups = null;
+    private Permission permission = null;
     
     @Override
     public void onEnable()
@@ -53,41 +60,75 @@ public class OnlineListPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
-    List<Group> getGroups()
-    {
-        if (groups == null) {
-            List<Group> groups = new ArrayList<>();
-            for (Map<?,?> map : getConfig().getMapList("groups")) {
-                String displayName = (String)map.get("DisplayName");
-                String permission = (String)map.get("Permission");
-                groups.add(new Group(displayName, permission));
+    private Permission getPermission() {
+        if (permission == null) {
+            RegisteredServiceProvider<Permission> permissionProvider = getServer().getServicesManager().getRegistration(Permission.class);
+            if (permissionProvider != null) {
+                permission = permissionProvider.getProvider();
             }
-            this.groups = groups;
         }
-        return groups;
+        return permission;
     }
 
-    String format(String string)
+    private boolean isStaff(UUID uuid) {
+        Player bukkitPlayer = getServer().getPlayer(uuid);
+        if (bukkitPlayer != null) {
+            return bukkitPlayer.hasPermission("onlinelist.staff");
+        } else {
+            Permission permission = getPermission();
+            if (permission == null) return false;
+            OfflinePlayer off = getServer().getOfflinePlayer(uuid);
+            return permission.playerHas((String)null, off, "onlinelist.staff");
+        }
+    }
+
+    String format(String string, Object... args)
     {
-        return ChatColor.translateAlternateColorCodes('&', string);
+        string = ChatColor.translateAlternateColorCodes('&', string);
+        if (args.length > 0) string = String.format(string, args);
+        return string;
+    }
+
+    void msg(CommandSender sender, String string, Object... args) {
+        sender.sendMessage(format(string, args));
     }
 
     void showOnlineList(CommandSender sender)
     {
-        String title = format(getConfig().getString("format.Title"));
-        Collection<Player> players = new LinkedList<Player>(getServer().getOnlinePlayers());
-        title = title.replace("%PlayerCount%", "" + players.size());
-        sender.sendMessage(title);
-        String delim = format(getConfig().getString("format.Delim", " "));
-        for (Group group : getGroups()) {
-            List<String> list = playerList(group, players);
-            StringBuilder sb = new StringBuilder(list.isEmpty() ? "" : list.get(0));
-            for (int i = 1; i < list.size(); ++i) sb.append(delim).append(list.get(i));
-            String line = format(getConfig().getString("format.Group"));
-            line = line.replace("%DisplayName%", group.displayName);
-            line = line.replace("%PlayerList%", sb.toString());
-            line = line.replace("%PlayerCount%", "" + list.size());
-            sender.sendMessage(line);
+        Map<String, List<OnlinePlayer>> serverList = new HashMap<>();
+        int totalCount = 0;
+        for (ServerConnection con: new ArrayList<>(Connect.getInstance().getServer().getConnections())) {
+            List<OnlinePlayer> conList = new ArrayList<>(con.getOnlinePlayers());
+            String displayName = con.getName();
+            Client client = Connect.getInstance().getClient(displayName);
+            if (client != null) displayName = client.getDisplayName();
+            List<OnlinePlayer> playerList = serverList.get(displayName);
+            if (playerList == null) {
+                playerList = new ArrayList<>();
+                serverList.put(displayName, playerList);
+            }
+            playerList.addAll(conList);
+            totalCount += conList.size();
+        }
+        String[] serverNames = serverList.keySet().toArray(new String[0]);
+        Arrays.sort(serverNames);
+        msg(sender, "&3&lPlayer List&r &3(&r%d&3)", totalCount);
+        for (String serverName: serverNames) {
+            OnlinePlayer[] playerArray = serverList.get(serverName).toArray(new OnlinePlayer[0]);
+            if (playerArray.length == 0) continue;
+            Arrays.sort(playerArray, new Comparator<OnlinePlayer>() {
+                @Override public int compare(OnlinePlayer a, OnlinePlayer b) { return String.CASE_INSENSITIVE_ORDER.compare(a.getName(), b.getName()); }
+                @Override public boolean equals(Object o) { return this == o; }
+            });
+            StringBuilder sb = new StringBuilder(format(" &3%s(&r%d&3)", serverName, playerArray.length));
+            for (OnlinePlayer player: playerArray) {
+                if (isStaff(player.getUuid())) {
+                    sb.append(format("&b %s", player.getName()));
+                } else {
+                    sb.append(format("&r %s", player.getName()));
+                }
+            }
+            sender.sendMessage(sb.toString());
         }
     }
 
