@@ -1,5 +1,5 @@
 name: OnlineList
-description: Display online players sorted by arbitrary groups
+description: Display online players sorted by server
 author: StarTux
 version: 0.1
 main: com.winthier.onlinelist.OnlineListPlugin

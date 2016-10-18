@@ -82,19 +82,9 @@ public class OnlineListPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    String format(String string, Object... args)
-    {
-        string = ChatColor.translateAlternateColorCodes('&', string);
-        if (args.length > 0) string = String.format(string, args);
-        return string;
-    }
-
-    void msg(CommandSender sender, String string, Object... args) {
-        sender.sendMessage(format(string, args));
-    }
-
     void showOnlineList(CommandSender sender)
     {
+        Player playerSender = sender instanceof Player ? (Player)sender : null;
         Map<String, List<OnlinePlayer>> serverList = new HashMap<>();
         int totalCount = 0;
         for (ServerConnection con: new ArrayList<>(Connect.getInstance().getServer().getConnections())) {
@@ -112,7 +102,7 @@ public class OnlineListPlugin extends JavaPlugin implements Listener {
         }
         String[] serverNames = serverList.keySet().toArray(new String[0]);
         Arrays.sort(serverNames);
-        msg(sender, "&3&l%s Player List&r &3(&r%d&3)", Connect.getInstance().getServer().getDisplayName(), totalCount);
+        Msg.send(sender, "&3&l%s Player List&r &3(&r%d&3)", Connect.getInstance().getServer().getDisplayName(), totalCount);
         for (String serverName: serverNames) {
             OnlinePlayer[] playerArray = serverList.get(serverName).toArray(new OnlinePlayer[0]);
             if (playerArray.length == 0) continue;
@@ -120,15 +110,30 @@ public class OnlineListPlugin extends JavaPlugin implements Listener {
                 @Override public int compare(OnlinePlayer a, OnlinePlayer b) { return String.CASE_INSENSITIVE_ORDER.compare(a.getName(), b.getName()); }
                 @Override public boolean equals(Object o) { return this == o; }
             });
-            StringBuilder sb = new StringBuilder(format(" &3%s(&r%d&3)", serverName, playerArray.length));
+            List<Object> json = new ArrayList<>();
+            json.add(Msg.button(
+                         ChatColor.DARK_AQUA,
+                         Msg.format(" &3%s(&r%d&3)", serverName, playerArray.length),
+                         null, null));
             for (OnlinePlayer player: playerArray) {
+                json.add(" ");
+                ChatColor color;
                 if (isStaff(player.getUuid())) {
-                    sb.append(format("&b %s", player.getName()));
+                    color = ChatColor.AQUA;
                 } else {
-                    sb.append(format("&r %s", player.getName()));
+                    color = ChatColor.WHITE;
                 }
+                json.add(Msg.button(
+                             color,
+                             player.getName(),
+                             player.getName(),
+                             "/msg " + player.getName() + " "));
             }
-            sender.sendMessage(sb.toString());
+            if (playerSender != null) {
+                Msg.raw(playerSender, json);
+            } else {
+                sender.sendMessage(Msg.jsonToString(json));
+            }
         }
     }
 
