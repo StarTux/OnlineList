@@ -86,8 +86,8 @@ public class Msg {
         } else if (json instanceof Map) {
             Map map = (Map)json;
             StringBuilder sb = new StringBuilder();
-            sb.append(map.get("text"));
-            sb.append(map.get("extra"));
+            sb.append(jsonToString(map.get("text")));
+            sb.append(jsonToString(map.get("extra")));
             return sb.toString();
         } else if (json instanceof String) {
             return (String)json;
